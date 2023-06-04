@@ -5,6 +5,7 @@ import LoginForm from './components/LoginForm'
 import Togglable from './components/Togglable'
 import Blog from './components/Blog'
 import blogService from './services/blogs'
+import loginService from './services/login'
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
@@ -12,7 +13,7 @@ const App = () => {
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState(null)
   
-  const [loginVisible, setLoginVisible] = useState(false)
+//  const [loginVisible, setLoginVisible] = useState(false)
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
@@ -25,6 +26,7 @@ const App = () => {
     if (loggedUserJSON) {
       const user = JSON.parse(loggedUserJSON)
       setUser(user)
+      blogService.setToken(user.token)
     }
   }, [])
 
@@ -36,20 +38,20 @@ const App = () => {
     }, 5000)
   }
 
-  const logIn = async (userObject) => {
-    await console.log('login', userObject)
+  const logIn = async (username, password) => {
     try {
+      const user = await loginService.login({
+        username, password
+      })
       window.localStorage.setItem(
-      'loggedBlogappUser', JSON.stringify(userObject)
+      'loggedBlogappUser', JSON.stringify(user)
       ) 
-      await blogService
-        .setToken(userObject.token)
-      console.log(userObject, "toimi nyt")
-      setUser(userObject)
+      blogService.setToken(user.token)
+      setUser(user)
       handleMessage('Login successful', 'success')
-      setLoginVisible(false)
+     // setLoginVisible(false)
     } catch (exception) {
-      handleMessage('Wrong username or password', 'error') //tämä ei toimi!
+      handleMessage('Wrong username or password', 'error')
     }
   }
 
@@ -60,29 +62,36 @@ const App = () => {
     handleMessage('Logout successful', 'success')
   }
 
-  const addBlog = (blogObject) => {
-    console.log(blogObject)
+  const addBlog = async (title, author, url) => {
     try {
-      blogService
-        .create(blogObject)
-        .then(returnedBlog => {
-        setBlogs(blogs.concat(returnedBlog))
-        })
-      handleMessage(`a new blog ${blogObject.title} by ${blogObject.author} added`, 'success')
-      setLoginVisible(false)
+      await blogService.create({title, author, url})
+      const blogs = await blogService.getAll()
+      setBlogs(blogs)
+      handleMessage(`a new blog ${title} by ${author} added`, 'success')
+//      setLoginVisible(false)
     } catch (error) {
       handleMessage('Something went wrong, check form for errors', 'error') 
-      //tämä ei toimi, pos. viesti näytetään vaikkei virheellistä blogia lisätäkään listaan
     }
   }
+  //lomakkeen pitää sulkeutua, kun uusi blogi lisätään
 
-  
+  const deleteBlog = async (id) => {
+    try {
+      await blogService.deleteBlog(id)
+      const blogsAfter = blogs.filter(blog => blog.id !== id);
+      setBlogs(blogsAfter)
+      handleMessage(`Blog deleted`, 'success')
+    } catch (error) {
+      handleMessage('Something went wrong', 'error') 
+    }
+  }
+  //toimii tässä vaiheessa kaikilla käyttäjillä
 
   const showBlogs = () => {
     return(
     <div>
     <br />
-    {blogs.map(blog => <Blog key={blog.id} blog={blog} />)}
+    {blogs.map(blog => <Blog key={blog.id} blog={blog} deleteBlog={() => deleteBlog(blog.id)}/>)}
     </div>
   )}
 

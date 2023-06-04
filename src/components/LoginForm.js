@@ -1,5 +1,4 @@
 import { useState } from "react"
-import loginService from '../services/login'
 
 const LoginForm = ({logIn}) =>  {
 
@@ -7,13 +6,10 @@ const LoginForm = ({logIn}) =>  {
     const [password, setPassword] = useState('')
 
     const loginEvent = async (event) => {
-      try{
-        event.preventDefault()
-        var user = await loginService.login({username, password})
-        logIn({username: user.username, name: user.name, token: user.token})
-      } catch {
-        console.error('Validation failed')
-      }
+      event.preventDefault()
+      logIn(username, password)
+      setUsername('')
+      setPassword('')
     }
       
     return (

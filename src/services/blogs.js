@@ -17,15 +17,14 @@ const create = async newBlog => {
   }
   console.log(config)
   const response = await axios.post(baseUrl, newBlog, config)
-  console.log(response.data, "controllerista")
   return response.data
 }
 
-const deleteBlog = async blogToDelete => {
+const deleteBlog = async id => {
   const config = {
     headers: { Authorization: token },
   }
-  const response = await axios.delete(`${baseUrl}/${blogToDelete.id}`, blogToDelete, config)
+  const response = await axios.delete(`${baseUrl}/${id}`, config)
   return response.data
 }
 
