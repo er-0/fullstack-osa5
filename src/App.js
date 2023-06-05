@@ -1,4 +1,4 @@
-import { useState, useEffect} from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Notification from './components/notification'
 import BlogForm from './components/BlogForm'
 import LoginForm from './components/LoginForm'
@@ -13,7 +13,7 @@ const App = () => {
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState(null)
   
-//  const [loginVisible, setLoginVisible] = useState(false)
+  const blogFormRef = useRef()
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
@@ -49,7 +49,6 @@ const App = () => {
       blogService.setToken(user.token)
       setUser(user)
       handleMessage('Login successful', 'success')
-     // setLoginVisible(false)
     } catch (exception) {
       handleMessage('Wrong username or password', 'error')
     }
@@ -64,34 +63,50 @@ const App = () => {
 
   const addBlog = async (title, author, url) => {
     try {
+      blogFormRef.current.toggleVisibility()
       await blogService.create({title, author, url})
       const blogs = await blogService.getAll()
       setBlogs(blogs)
       handleMessage(`a new blog ${title} by ${author} added`, 'success')
-//      setLoginVisible(false)
     } catch (error) {
       handleMessage('Something went wrong, check form for errors', 'error') 
     }
   }
-  //lomakkeen pitää sulkeutua, kun uusi blogi lisätään
 
-  const deleteBlog = async (id) => {
-    try {
-      await blogService.deleteBlog(id)
-      const blogsAfter = blogs.filter(blog => blog.id !== id);
-      setBlogs(blogsAfter)
-      handleMessage(`Blog deleted`, 'success')
-    } catch (error) {
-      handleMessage('Something went wrong', 'error') 
+  const addLike = async (blog) => {
+    const updatedBlog = {
+      ...blog,
+      likes: blog.likes + 1
+    }
+    await blogService.update(updatedBlog)
+    const blogs = await blogService.getAll()
+    setBlogs(blogs)
+  }
+
+  const deleteBlog = async (blog) => {
+    if (window.confirm(`Remove blog ${blog.title} by ${blog.author}?`)) {
+      try {
+        await blogService.deleteBlog(blog.id)
+        const blogsAfter = blogs.filter(b => b.id !== blog.id);
+        setBlogs(blogsAfter)
+        handleMessage(`Blog deleted`, 'success')
+      } catch (error) {
+        handleMessage('Something went wrong', 'error') 
+      }
     }
   }
-  //toimii tässä vaiheessa kaikilla käyttäjillä
+  //toimi kaikilla käyttäjillä backendin virheen takia, korjattu
 
   const showBlogs = () => {
     return(
     <div>
     <br />
-    {blogs.map(blog => <Blog key={blog.id} blog={blog} deleteBlog={() => deleteBlog(blog.id)}/>)}
+    {blogs
+      .sort((a, b) => b.likes - a.likes)
+      .map(blog => 
+        <Blog key={blog.id} user={user} blog={blog} deleteBlog={() => deleteBlog(blog)} addLike={() => addLike(blog)}/>
+      )
+    }
     </div>
   )}
 
@@ -111,7 +126,7 @@ const App = () => {
     {user && showHeader()}
     <br />
     {user &&
-    <Togglable buttonLabel="add blog">
+    <Togglable buttonLabel="add blog" ref={blogFormRef}>
       <BlogForm addNewBlog={addBlog} user={user}/>
     </Togglable>
     }
