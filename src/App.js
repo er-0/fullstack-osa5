@@ -12,13 +12,13 @@ const App = () => {
   const [user, setUser] = useState(null)
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState(null)
-  
+
   const blogFormRef = useRef()
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
       setBlogs( blogs )
-    )  
+    )
   }, [])
 
   useEffect(() => {
@@ -44,8 +44,8 @@ const App = () => {
         username, password
       })
       window.localStorage.setItem(
-      'loggedBlogappUser', JSON.stringify(user)
-      ) 
+        'loggedBlogappUser', JSON.stringify(user)
+      )
       blogService.setToken(user.token)
       setUser(user)
       handleMessage('Login successful', 'success')
@@ -61,15 +61,15 @@ const App = () => {
     handleMessage('Logout successful', 'success')
   }
 
-  const addBlog = async (title, author, url) => {
+  const addBlog = async (blog) => {
     try {
       blogFormRef.current.toggleVisibility()
-      await blogService.create({title, author, url})
+      await blogService.create(blog)
       const blogs = await blogService.getAll()
       setBlogs(blogs)
-      handleMessage(`a new blog ${title} by ${author} added`, 'success')
+      handleMessage(`a new blog ${blog.title} by ${blog.author} added`, 'success')
     } catch (error) {
-      handleMessage('Something went wrong, check form for errors', 'error') 
+      handleMessage('Something went wrong, check form for errors', 'error')
     }
   }
 
@@ -87,50 +87,49 @@ const App = () => {
     if (window.confirm(`Remove blog ${blog.title} by ${blog.author}?`)) {
       try {
         await blogService.deleteBlog(blog.id)
-        const blogsAfter = blogs.filter(b => b.id !== blog.id);
+        const blogsAfter = blogs.filter(b => b.id !== blog.id)
         setBlogs(blogsAfter)
-        handleMessage(`Blog deleted`, 'success')
+        handleMessage('Blog deleted', 'success')
       } catch (error) {
-        handleMessage('Something went wrong', 'error') 
+        handleMessage('Something went wrong', 'error')
       }
     }
   }
-  //toimi kaikilla käyttäjillä backendin virheen takia, korjattu
 
   const showBlogs = () => {
     return(
-    <div>
-    <br />
-    {blogs
-      .sort((a, b) => b.likes - a.likes)
-      .map(blog => 
-        <Blog key={blog.id} user={user} blog={blog} deleteBlog={() => deleteBlog(blog)} addLike={() => addLike(blog)}/>
-      )
-    }
-    </div>
-  )}
+      <div>
+        <br />
+        {blogs
+          .sort((a, b) => b.likes - a.likes)
+          .map(blog =>
+            <Blog key={blog.id} user={user} blog={blog} deleteBlog={() => deleteBlog(blog)} addLike={() => addLike(blog)}/>
+          )
+        }
+      </div>
+    )}
 
   const showHeader = () => (
     <div>
-    <h1>blogs</h1>
-    {user.name} logged in <button onClick={handleLogOut}>log out</button>
+      <h1>blogs</h1>
+      {user.name} logged in <button onClick={handleLogOut}>log out</button>
     </div>
   )
 
 
   return (
     <div>
-    <Notification message={message} status={status} />
-    {!user && <LoginForm logIn={logIn}/>
-    }
-    {user && showHeader()}
-    <br />
-    {user &&
+      <Notification message={message} status={status} />
+      {!user && <LoginForm logIn={logIn}/>
+      }
+      {user && showHeader()}
+      <br />
+      {user &&
     <Togglable buttonLabel="add blog" ref={blogFormRef}>
-      <BlogForm addNewBlog={addBlog} user={user}/>
+      <BlogForm addBlog={addBlog} />
     </Togglable>
-    }
-    {user && showBlogs()}
+      }
+      {user && showBlogs()}
     </div>
   )
 }
